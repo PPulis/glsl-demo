@@ -1,3 +1,125 @@
+// Simple Stats.js implementation
+var Stats = function() {
+	var startTime = Date.now(), prevTime = startTime;
+	var ms = 0, msMin = Infinity, msMax = 0;
+	var fps = 0, fpsMin = Infinity, fpsMax = 0;
+	var frames = 0, mode = 0;
+
+	var container = document.createElement('div');
+	container.style.cssText = 'position:fixed;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000;background:#000;color:#0f0;font-family:monospace;font-size:9px;line-height:1.2;padding:8px';
+
+	var fpsDiv = document.createElement('div');
+	fpsDiv.style.cssText = 'color:#0f0';
+	fpsDiv.textContent = 'FPS: 0';
+	container.appendChild(fpsDiv);
+
+	var msDiv = document.createElement('div');
+	msDiv.style.cssText = 'color:#0f0';
+	msDiv.textContent = 'MS: 0';
+	container.appendChild(msDiv);
+
+	this.dom = container;
+
+	this.update = function() {
+		startTime = prevTime;
+		prevTime = Date.now();
+
+		ms = prevTime - startTime;
+		msMin = Math.min(msMin, ms);
+		msMax = Math.max(msMax, ms);
+
+		frames++;
+
+		if (prevTime > startTime + 1000) {
+			fps = Math.round((frames * 1000) / (prevTime - startTime));
+			fpsMin = Math.min(fpsMin, fps);
+			fpsMax = Math.max(fpsMax, fps);
+
+			fpsDiv.textContent = 'FPS: ' + fps + ' (' + fpsMin + '-' + fpsMax + ')';
+			msDiv.textContent = 'MS: ' + ms + ' (' + msMin + '-' + msMax + ')';
+
+			frames = 0;
+		}
+
+		return prevTime;
+	};
+};
+
+// Simple dat.GUI implementation
+var dat = {
+	GUI: function(options) {
+		var container = document.createElement('div');
+		container.style.cssText = 'position:fixed;top:20px;left:20px;background:rgba(0,0,0,0.9);border:1px solid #333;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;color:#fff;z-index:10001';
+
+		var controllers = {};
+
+		this.add = function(obj, prop, options) {
+			var value = obj[prop];
+
+			if (Array.isArray(options)) {
+				// Dropdown
+				var select = document.createElement('select');
+				select.style.cssText = 'width:100%;margin:4px 0;padding:4px;background:#222;color:#fff;border:1px solid #555';
+				
+				options.forEach(function(opt) {
+					var optEl = document.createElement('option');
+					optEl.value = opt;
+					optEl.textContent = opt;
+					if (opt === value) optEl.selected = true;
+					select.appendChild(optEl);
+				});
+
+				select.addEventListener('change', function() {
+					obj[prop] = select.value;
+					if (this.onFinishChange) this.onFinishChange();
+				}.bind(this));
+
+				var label = document.createElement('label');
+				label.style.cssText = 'display:block;margin-bottom:8px';
+				label.innerHTML = '<span style="color:#2FA1D6">' + prop + ':</span><br>';
+				label.appendChild(select);
+				container.appendChild(label);
+			} else if (typeof options === 'number' || (Array.isArray(options) && options.length === 3)) {
+				// Slider
+				var min = Array.isArray(options) ? options[0] : options;
+				var max = Array.isArray(options) ? options[1] : options * 2;
+				var step = Array.isArray(options) ? options[2] : 0.01;
+
+				var slider = document.createElement('input');
+				slider.type = 'range';
+				slider.min = min;
+				slider.max = max;
+				slider.step = step;
+				slider.value = value;
+				slider.style.cssText = 'width:100%;margin:4px 0';
+
+				var valueSpan = document.createElement('span');
+				valueSpan.textContent = value.toFixed(2);
+				valueSpan.style.cssText = 'color:#2FA1D6;margin-left:8px';
+
+				slider.addEventListener('input', function() {
+					obj[prop] = parseFloat(slider.value);
+					valueSpan.textContent = obj[prop].toFixed(2);
+					if (this.onFinishChange) this.onFinishChange();
+				}.bind(this));
+
+				var label = document.createElement('label');
+				label.style.cssText = 'display:block;margin-bottom:8px';
+				label.innerHTML = '<span style="color:#2FA1D6">' + prop + ':</span><br>';
+				label.appendChild(slider);
+				label.appendChild(valueSpan);
+				container.appendChild(label);
+			}
+
+			return this;
+		};
+
+		this.domElement = container;
+
+		return this;
+	}
+};
+
 // Simple OrbitControls implementation
 var OrbitControls = function(object, domElement) {
 	this.object = object;
@@ -5,32 +127,27 @@ var OrbitControls = function(object, domElement) {
 	this.autoRotate = false;
 	this.autoRotateSpeed = 2;
 	this.enablePan = false;
-	
-	var euler = new THREE.Euler(0, 0, 0, 'YXZ');
-	var PI_2 = Math.PI / 2;
-	var v = new THREE.Vector3();
-	var spherical = new THREE.Spherical();
-	
+
 	var mouseDown = false;
 	var mouseX = 0;
 	var mouseY = 0;
-	
+
 	var self = this;
-	
+
 	this.update = function() {
 		if (this.autoRotate) {
 			this.object.rotation.y += (this.autoRotateSpeed * Math.PI / 180) / 60;
 		}
 	};
-	
+
 	this.domElement.addEventListener('mousedown', function() {
 		mouseDown = true;
 	}, false);
-	
+
 	this.domElement.addEventListener('mouseup', function() {
 		mouseDown = false;
 	}, false);
-	
+
 	this.domElement.addEventListener('mousemove', function(event) {
 		if (mouseDown) {
 			var deltaX = event.clientX - mouseX;
@@ -53,9 +170,6 @@ function runSketch() {
 
 	loadShaders();
 
-	/*
-	 * Loads the shader files
-	 */
 	function loadShaders() {
 		Promise.all([
 			fetch('shaders/vertex.glsl').then(response => response.text()),
@@ -70,9 +184,6 @@ function runSketch() {
 		});
 	}
 
-	/*
-	 * Initializes the sketch
-	 */
 	function init() {
 		// Initialize the WebGL renderer
 		renderer = new THREE.WebGLRenderer({
@@ -83,42 +194,32 @@ function runSketch() {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		renderer.setClearColor(new THREE.Color(0, 0, 0), 1);
 
-		// Add the renderer to the sketch container
 		var container = document.getElementById("sketch-container");
 		container.appendChild(renderer.domElement);
 
-		// Initialize the scene
 		scene = new THREE.Scene();
 
-		// Initialize the camera
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
 		camera.position.z = 30;
 
-		// Initialize the camera controls
 		controls = new OrbitControls(camera, renderer.domElement);
 		controls.enablePan = false;
 		controls.autoRotate = true;
 		controls.autoRotateSpeed = 2;
 
-		// Initialize the clock
 		clock = new THREE.Clock(true);
 
-		// Initialize the statistics monitor and add it to the sketch container
 		stats = new Stats();
-		stats.dom.style.cssText = "position:absolute;top:20px;right:20px;";
 		document.body.appendChild(stats.dom);
 
-		// Initialize the control parameters
 		controlParameters = {
 			"Geometry" : "Torus knot",
 			"Speed": 1.0,
 			"Scale": 1.0
 		};
 
-		// Add the control panel to the sketch
 		addControlPanel();
 
-		// Define the shader uniforms
 		uniforms = {
 			u_time : {
 				type : "f",
@@ -140,7 +241,6 @@ function runSketch() {
 			}
 		};
 
-		// Create the shader material
 		material = new THREE.ShaderMaterial({
 			uniforms : uniforms,
 			vertexShader : vertexShaderCode,
@@ -152,67 +252,46 @@ function runSketch() {
 			}
 		});
 
-		// Create the mesh and add it to the scene
 		addMeshToScene();
 
-		// Add the event listeners
 		window.addEventListener("resize", onWindowResize, false);
 		renderer.domElement.addEventListener("mousemove", onMouseMove, false);
 		renderer.domElement.addEventListener("touchstart", onTouchMove, false);
 		renderer.domElement.addEventListener("touchmove", onTouchMove, false);
 	}
 
-	/*
-	 * Adds the control panel to the sketch
-	 */
 	function addControlPanel() {
-		// Create the control panel
 		var controlPanel = new dat.GUI({
 			autoPlace : true
 		});
 
-		// Add the controllers
 		controlPanel.add(controlParameters, "Geometry", [ "Torus knot", "Sphere", "Icosahedron", "Suzanne" ])
-				.onFinishChange(addMeshToScene);
+				.onFinishChange = function() { addMeshToScene(); };
 		controlPanel.add(controlParameters, "Speed", 0.1, 5.0, 0.1);
-		controlPanel.add(controlParameters, "Scale", 0.5, 2.0, 0.1).onFinishChange(addMeshToScene);
+		controlPanel.add(controlParameters, "Scale", 0.5, 2.0, 0.1).onFinishChange = function() { addMeshToScene(); };
 
-		// Add the GUI to the correct DOM element
 		document.getElementById("sketch-gui").appendChild(controlPanel.domElement);
 	}
 
-	/*
-	 * Adds the mesh to the scene
-	 */
 	function addMeshToScene() {
-		// Remove any previous mesh from the scene
 		if (mesh) {
 			scene.remove(mesh);
 		}
 
-		// Handle all the different options
 		if (controlParameters.Geometry == "Suzanne") {
-			// Load the json file that contains the geometry
 			var loader = new THREE.BufferGeometryLoader();
 			loader.load("objects/suzanne_buffergeometry.json", function(geometry) {
-				// Scale the geometry
 				geometry.scale(10 * controlParameters.Scale, 10 * controlParameters.Scale, 10 * controlParameters.Scale);
-
-				// Calculate the vertex normals
 				geometry.computeVertexNormals();
-
-				// Create the mesh and add it to the scene
 				mesh = new THREE.Mesh(geometry, material);
 				scene.add(mesh);
 			}, undefined, function(error) {
 				console.warn('Suzanne geometry not found, using Icosahedron instead');
-				// Fallback to Icosahedron
 				var geometry = new THREE.IcosahedronGeometry(10 * controlParameters.Scale, 4);
 				mesh = new THREE.Mesh(geometry, material);
 				scene.add(mesh);
 			});
 		} else {
-			// Create the desired geometry
 			var geometry;
 
 			if (controlParameters.Geometry == "Torus knot") {
@@ -223,24 +302,17 @@ function runSketch() {
 				geometry = new THREE.IcosahedronGeometry(10 * controlParameters.Scale, 4);
 			}
 
-			// Create the mesh and add it to the scene
 			mesh = new THREE.Mesh(geometry, material);
 			scene.add(mesh);
 		}
 	}
 
-	/*
-	 * Animates the sketch
-	 */
 	function animate() {
 		requestAnimationFrame(animate);
 		render();
 		stats.update();
 	}
 
-	/*
-	 * Renders the sketch
-	 */
 	function render() {
 		controls.update();
 		uniforms.u_time.value = clock.getElapsedTime() * controlParameters.Speed;
@@ -248,36 +320,18 @@ function runSketch() {
 		renderer.render(scene, camera);
 	}
 
-	/*
-	 * Updates the renderer size, the camera aspect ratio and the uniforms when the window is resized
-	 */
 	function onWindowResize(event) {
-		// Update the renderer
 		renderer.setSize(window.innerWidth, window.innerHeight);
-
-		// Update the camera
 		camera.aspect = window.innerWidth / window.innerHeight;
 		camera.updateProjectionMatrix();
-
-		// Update the resolution uniform
 		uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio);
 	}
 
-	/*
-	 * Updates the uniforms when the mouse moves
-	 */
 	function onMouseMove(event) {
-		// Update the mouse uniform
-		uniforms.u_mouse.value.set(event.pageX, window.innerHeight - event.pageY).multiplyScalar(
-				window.devicePixelRatio);
+		uniforms.u_mouse.value.set(event.pageX, window.innerHeight - event.pageY).multiplyScalar(window.devicePixelRatio);
 	}
 
-	/*
-	 * Updates the uniforms when the touch moves
-	 */
 	function onTouchMove(event) {
-		// Update the mouse uniform
-		uniforms.u_mouse.value.set(event.touches[0].pageX, window.innerHeight - event.touches[0].pageY).multiplyScalar(
-				window.devicePixelRatio);
+		uniforms.u_mouse.value.set(event.touches[0].pageX, window.innerHeight - event.touches[0].pageY).multiplyScalar(window.devicePixelRatio);
 	}
 }
