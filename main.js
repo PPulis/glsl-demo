@@ -1,337 +1,264 @@
-// Simple Stats.js implementation
+// ============================================================================
+// GLSL SHADER DEMO - SELF-CONTAINED VERSION
+// ============================================================================
+
+// Simple Stats Monitor (FPS counter)
 var Stats = function() {
 	var startTime = Date.now(), prevTime = startTime;
 	var ms = 0, msMin = Infinity, msMax = 0;
 	var fps = 0, fpsMin = Infinity, fpsMax = 0;
-	var frames = 0, mode = 0;
+	var frames = 0;
 
 	var container = document.createElement('div');
-	container.style.cssText = 'position:fixed;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000;background:#000;color:#0f0;font-family:monospace;font-size:9px;line-height:1.2;padding:8px';
+	container.style.cssText = 'position:fixed;top:0;left:0;opacity:0.9;z-index:10000;background:#000;color:#0f0;font-family:monospace;font-size:11px;line-height:1.4;padding:10px;border-right:2px solid #0f0;border-bottom:2px solid #0f0';
 
-	var fpsDiv = document.createElement('div');
-	fpsDiv.style.cssText = 'color:#0f0';
-	fpsDiv.textContent = 'FPS: 0';
-	container.appendChild(fpsDiv);
-
-	var msDiv = document.createElement('div');
-	msDiv.style.cssText = 'color:#0f0';
-	msDiv.textContent = 'MS: 0';
-	container.appendChild(msDiv);
+	var text = document.createElement('div');
+	text.textContent = 'FPS: 0 | MS: 0';
+	container.appendChild(text);
 
 	this.dom = container;
 
 	this.update = function() {
-		startTime = prevTime;
-		prevTime = Date.now();
-
-		ms = prevTime - startTime;
+		var now = Date.now();
+		ms = now - prevTime;
 		msMin = Math.min(msMin, ms);
 		msMax = Math.max(msMax, ms);
-
 		frames++;
 
-		if (prevTime > startTime + 1000) {
-			fps = Math.round((frames * 1000) / (prevTime - startTime));
+		if (now >= startTime + 1000) {
+			fps = Math.round((frames * 1000) / (now - startTime));
 			fpsMin = Math.min(fpsMin, fps);
 			fpsMax = Math.max(fpsMax, fps);
-
-			fpsDiv.textContent = 'FPS: ' + fps + ' (' + fpsMin + '-' + fpsMax + ')';
-			msDiv.textContent = 'MS: ' + ms + ' (' + msMin + '-' + msMax + ')';
-
+			text.textContent = 'FPS: ' + fps + ' | MS: ' + ms;
 			frames = 0;
+			startTime = now;
 		}
-
-		return prevTime;
+		prevTime = now;
 	};
 };
 
-// Simple dat.GUI implementation
-var dat = {
-	GUI: function(options) {
-		var container = document.createElement('div');
-		container.style.cssText = 'position:fixed;top:20px;left:20px;background:rgba(0,0,0,0.9);border:1px solid #333;border-radius:4px;padding:10px;font-family:monospace;font-size:12px;color:#fff;z-index:10001';
+// Simple GUI
+var SimpleGUI = function() {
+	var container = document.createElement('div');
+	container.style.cssText = 'background:rgba(0,0,0,0.85);border:1px solid #333;border-radius:3px;padding:12px;font-family:monospace;font-size:12px;color:#fff;min-width:180px';
 
-		var controllers = {};
+	this.add = function(obj, prop, values, callback) {
+		var row = document.createElement('div');
+		row.style.cssText = 'margin-bottom:8px;padding:4px';
 
-		this.add = function(obj, prop, options) {
-			var value = obj[prop];
+		var label = document.createElement('label');
+		label.style.cssText = 'display:block;color:#2FA1D6;margin-bottom:4px;font-weight:bold';
+		label.textContent = prop;
 
-			if (Array.isArray(options)) {
-				// Dropdown
-				var select = document.createElement('select');
-				select.style.cssText = 'width:100%;margin:4px 0;padding:4px;background:#222;color:#fff;border:1px solid #555';
-				
-				options.forEach(function(opt) {
-					var optEl = document.createElement('option');
-					optEl.value = opt;
-					optEl.textContent = opt;
-					if (opt === value) optEl.selected = true;
-					select.appendChild(optEl);
-				});
+		if (Array.isArray(values)) {
+			// Dropdown
+			var select = document.createElement('select');
+			select.style.cssText = 'width:100%;padding:4px;background:#222;color:#fff;border:1px solid #555;cursor:pointer';
+			values.forEach(function(v) {
+				var opt = document.createElement('option');
+				opt.value = v;
+				opt.textContent = v;
+				if (v === obj[prop]) opt.selected = true;
+				select.appendChild(opt);
+			});
+			select.addEventListener('change', function() {
+				obj[prop] = select.value;
+				if (callback) callback();
+			});
+			row.appendChild(label);
+			row.appendChild(select);
+		} else if (values && values.min !== undefined) {
+			// Slider
+			var slider = document.createElement('input');
+			slider.type = 'range';
+			slider.min = values.min;
+			slider.max = values.max;
+			slider.step = values.step || 0.1;
+			slider.value = obj[prop];
+			slider.style.cssText = 'width:100%;cursor:pointer';
 
-				select.addEventListener('change', function() {
-					obj[prop] = select.value;
-					if (this.onFinishChange) this.onFinishChange();
-				}.bind(this));
+			var valSpan = document.createElement('span');
+			valSpan.style.cssText = 'color:#2FA1D6;margin-left:8px;font-weight:bold';
+			valSpan.textContent = obj[prop].toFixed(2);
 
-				var label = document.createElement('label');
-				label.style.cssText = 'display:block;margin-bottom:8px';
-				label.innerHTML = '<span style="color:#2FA1D6">' + prop + ':</span><br>';
-				label.appendChild(select);
-				container.appendChild(label);
-			} else if (typeof options === 'number' || (Array.isArray(options) && options.length === 3)) {
-				// Slider
-				var min = Array.isArray(options) ? options[0] : options;
-				var max = Array.isArray(options) ? options[1] : options * 2;
-				var step = Array.isArray(options) ? options[2] : 0.01;
+			slider.addEventListener('input', function() {
+				obj[prop] = parseFloat(slider.value);
+				valSpan.textContent = obj[prop].toFixed(2);
+				if (callback) callback();
+			});
 
-				var slider = document.createElement('input');
-				slider.type = 'range';
-				slider.min = min;
-				slider.max = max;
-				slider.step = step;
-				slider.value = value;
-				slider.style.cssText = 'width:100%;margin:4px 0';
+			var sliderRow = document.createElement('div');
+			sliderRow.style.cssText = 'display:flex;align-items:center';
+			sliderRow.appendChild(slider);
+			sliderRow.appendChild(valSpan);
 
-				var valueSpan = document.createElement('span');
-				valueSpan.textContent = value.toFixed(2);
-				valueSpan.style.cssText = 'color:#2FA1D6;margin-left:8px';
+			row.appendChild(label);
+			row.appendChild(sliderRow);
+		}
 
-				slider.addEventListener('input', function() {
-					obj[prop] = parseFloat(slider.value);
-					valueSpan.textContent = obj[prop].toFixed(2);
-					if (this.onFinishChange) this.onFinishChange();
-				}.bind(this));
-
-				var label = document.createElement('label');
-				label.style.cssText = 'display:block;margin-bottom:8px';
-				label.innerHTML = '<span style="color:#2FA1D6">' + prop + ':</span><br>';
-				label.appendChild(slider);
-				label.appendChild(valueSpan);
-				container.appendChild(label);
-			}
-
-			return this;
-		};
-
-		this.domElement = container;
-
+		container.appendChild(row);
 		return this;
-	}
-};
-
-// Simple OrbitControls implementation
-var OrbitControls = function(object, domElement) {
-	this.object = object;
-	this.domElement = domElement;
-	this.autoRotate = false;
-	this.autoRotateSpeed = 2;
-	this.enablePan = false;
-
-	var mouseDown = false;
-	var mouseX = 0;
-	var mouseY = 0;
-
-	var self = this;
-
-	this.update = function() {
-		if (this.autoRotate) {
-			this.object.rotation.y += (this.autoRotateSpeed * Math.PI / 180) / 60;
-		}
 	};
 
-	this.domElement.addEventListener('mousedown', function() {
-		mouseDown = true;
-	}, false);
-
-	this.domElement.addEventListener('mouseup', function() {
-		mouseDown = false;
-	}, false);
-
-	this.domElement.addEventListener('mousemove', function(event) {
-		if (mouseDown) {
-			var deltaX = event.clientX - mouseX;
-			var deltaY = event.clientY - mouseY;
-			self.object.rotation.y += deltaX * 0.005;
-			self.object.rotation.x += deltaY * 0.005;
-		}
-		mouseX = event.clientX;
-		mouseY = event.clientY;
-	}, false);
+	this.domElement = container;
+	return this;
 };
 
-window.onload = function() {
-	runSketch();
-};
+// ============================================================================
+// MAIN APPLICATION
+// ============================================================================
 
-function runSketch() {
-	var renderer, scene, camera, clock, stats, controlParameters, uniforms, material, mesh, controls;
-	var vertexShaderCode = "", fragmentShaderCode = "";
+window.addEventListener('DOMContentLoaded', function() {
+	var renderer, scene, camera, clock, stats, gui, controls;
+	var mesh = null;
+	var uniforms = {};
+	var material = null;
+	var vertexShader = '';
+	var fragmentShader = '';
 
-	loadShaders();
+	var params = {
+		Geometry: 'Torus knot',
+		Speed: 1.0,
+		Scale: 1.0
+	};
 
-	function loadShaders() {
-		Promise.all([
-			fetch('shaders/vertex.glsl').then(response => response.text()),
-			fetch('shaders/fragment.glsl').then(response => response.text())
-		]).then(([vertexShader, fragmentShader]) => {
-			vertexShaderCode = vertexShader;
-			fragmentShaderCode = fragmentShader;
-			init();
-			animate();
-		}).catch(error => {
-			console.error('Error loading shaders:', error);
-		});
-	}
+	// Load shaders
+	Promise.all([
+		fetch('shaders/vertex.glsl').then(r => r.text()),
+		fetch('shaders/fragment.glsl').then(r => r.text())
+	]).then(function([vs, fs]) {
+		vertexShader = vs;
+		fragmentShader = fs;
+		init();
+		animate();
+	}).catch(function(err) {
+		console.error('Failed to load shaders:', err);
+		alert('Failed to load shader files. Check that shaders/ directory exists.');
+	});
 
 	function init() {
-		// Initialize the WebGL renderer
-		renderer = new THREE.WebGLRenderer({
-			antialias : true,
-			alpha: true
-		});
+		// WebGL Renderer
+		renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 		renderer.setPixelRatio(window.devicePixelRatio);
 		renderer.setSize(window.innerWidth, window.innerHeight);
-		renderer.setClearColor(new THREE.Color(0, 0, 0), 1);
+		renderer.setClearColor(0x000000, 1);
+		document.getElementById('sketch-container').appendChild(renderer.domElement);
 
-		var container = document.getElementById("sketch-container");
-		container.appendChild(renderer.domElement);
-
+		// Scene & Camera
 		scene = new THREE.Scene();
-
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
 		camera.position.z = 30;
 
-		controls = new OrbitControls(camera, renderer.domElement);
-		controls.enablePan = false;
-		controls.autoRotate = true;
-		controls.autoRotateSpeed = 2;
+		// Simple orbit controls
+		var isDragging = false;
+		var previousMousePosition = { x: 0, y: 0 };
 
+		renderer.domElement.addEventListener('mousedown', function(e) {
+			isDragging = true;
+			previousMousePosition = { x: e.clientX, y: e.clientY };
+		});
+
+		renderer.domElement.addEventListener('mousemove', function(e) {
+			if (isDragging) {
+				var deltaX = e.clientX - previousMousePosition.x;
+				var deltaY = e.clientY - previousMousePosition.y;
+				camera.rotation.y += deltaX * 0.01;
+				camera.rotation.x += deltaY * 0.01;
+			}
+			previousMousePosition = { x: e.clientX, y: e.clientY };
+		});
+
+		renderer.domElement.addEventListener('mouseup', function() {
+			isDragging = false;
+		});
+
+		renderer.domElement.addEventListener('wheel', function(e) {
+			e.preventDefault();
+			camera.position.z += e.deltaY * 0.05;
+		});
+
+		// Clock
 		clock = new THREE.Clock(true);
 
+		// Stats
 		stats = new Stats();
 		document.body.appendChild(stats.dom);
 
-		controlParameters = {
-			"Geometry" : "Torus knot",
-			"Speed": 1.0,
-			"Scale": 1.0
-		};
+		// GUI
+		gui = new SimpleGUI();
+		gui.add(params, 'Geometry', ['Torus knot', 'Sphere', 'Icosahedron'], updateGeometry);
+		gui.add(params, 'Speed', { min: 0.1, max: 5, step: 0.1 });
+		gui.add(params, 'Scale', { min: 0.5, max: 2, step: 0.1 }, updateGeometry);
+		document.getElementById('sketch-gui').appendChild(gui.domElement);
 
-		addControlPanel();
-
+		// Uniforms
 		uniforms = {
-			u_time : {
-				type : "f",
-				value : 0.0
-			},
-			u_frame : {
-				type : "f",
-				value : 0.0
-			},
-			u_resolution : {
-				type : "v2",
-				value : new THREE.Vector2(window.innerWidth, window.innerHeight)
-						.multiplyScalar(window.devicePixelRatio)
-			},
-			u_mouse : {
-				type : "v2",
-				value : new THREE.Vector2(0.7 * window.innerWidth, window.innerHeight)
-						.multiplyScalar(window.devicePixelRatio)
-			}
+			u_time: { value: 0.0 },
+			u_frame: { value: 0.0 },
+			u_resolution: { value: new THREE.Vector2(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio) },
+			u_mouse: { value: new THREE.Vector2(0, 0) }
 		};
 
+		// Material
 		material = new THREE.ShaderMaterial({
-			uniforms : uniforms,
-			vertexShader : vertexShaderCode,
-			fragmentShader : fragmentShaderCode,
-			side : THREE.DoubleSide,
-			transparent : true,
-			extensions : {
-				derivatives : true
-			}
+			uniforms: uniforms,
+			vertexShader: vertexShader,
+			fragmentShader: fragmentShader,
+			side: THREE.DoubleSide,
+			transparent: true,
+			extensions: { derivatives: true }
 		});
 
-		addMeshToScene();
+		updateGeometry();
 
-		window.addEventListener("resize", onWindowResize, false);
-		renderer.domElement.addEventListener("mousemove", onMouseMove, false);
-		renderer.domElement.addEventListener("touchstart", onTouchMove, false);
-		renderer.domElement.addEventListener("touchmove", onTouchMove, false);
+		// Events
+		window.addEventListener('resize', onWindowResize);
+		renderer.domElement.addEventListener('mousemove', onMouseMove);
 	}
 
-	function addControlPanel() {
-		var controlPanel = new dat.GUI({
-			autoPlace : true
-		});
+	function updateGeometry() {
+		if (mesh) scene.remove(mesh);
 
-		controlPanel.add(controlParameters, "Geometry", [ "Torus knot", "Sphere", "Icosahedron", "Suzanne" ])
-				.onFinishChange = function() { addMeshToScene(); };
-		controlPanel.add(controlParameters, "Speed", 0.1, 5.0, 0.1);
-		controlPanel.add(controlParameters, "Scale", 0.5, 2.0, 0.1).onFinishChange = function() { addMeshToScene(); };
+		var geometry;
+		var scale = params.Scale;
 
-		document.getElementById("sketch-gui").appendChild(controlPanel.domElement);
-	}
-
-	function addMeshToScene() {
-		if (mesh) {
-			scene.remove(mesh);
+		switch(params.Geometry) {
+			case 'Torus knot':
+				geometry = new THREE.TorusKnotGeometry(6.5 * scale, 2.3 * scale, 256, 32);
+				break;
+			case 'Sphere':
+				geometry = new THREE.SphereGeometry(10 * scale, 64, 64);
+				break;
+			case 'Icosahedron':
+				geometry = new THREE.IcosahedronGeometry(10 * scale, 4);
+				break;
 		}
 
-		if (controlParameters.Geometry == "Suzanne") {
-			var loader = new THREE.BufferGeometryLoader();
-			loader.load("objects/suzanne_buffergeometry.json", function(geometry) {
-				geometry.scale(10 * controlParameters.Scale, 10 * controlParameters.Scale, 10 * controlParameters.Scale);
-				geometry.computeVertexNormals();
-				mesh = new THREE.Mesh(geometry, material);
-				scene.add(mesh);
-			}, undefined, function(error) {
-				console.warn('Suzanne geometry not found, using Icosahedron instead');
-				var geometry = new THREE.IcosahedronGeometry(10 * controlParameters.Scale, 4);
-				mesh = new THREE.Mesh(geometry, material);
-				scene.add(mesh);
-			});
-		} else {
-			var geometry;
-
-			if (controlParameters.Geometry == "Torus knot") {
-				geometry = new THREE.TorusKnotGeometry(6.5 * controlParameters.Scale, 2.3 * controlParameters.Scale, 256, 32);
-			} else if (controlParameters.Geometry == "Sphere") {
-				geometry = new THREE.SphereGeometry(10 * controlParameters.Scale, 64, 64);
-			} else if (controlParameters.Geometry == "Icosahedron") {
-				geometry = new THREE.IcosahedronGeometry(10 * controlParameters.Scale, 4);
-			}
-
-			mesh = new THREE.Mesh(geometry, material);
-			scene.add(mesh);
-		}
+		mesh = new THREE.Mesh(geometry, material);
+		scene.add(mesh);
 	}
 
 	function animate() {
 		requestAnimationFrame(animate);
-		render();
+
+		uniforms.u_time.value = clock.getElapsedTime() * params.Speed;
+		uniforms.u_frame.value += 1.0;
+
+		// Auto rotate
+		if (mesh) mesh.rotation.y += 0.003;
+
+		renderer.render(scene, camera);
 		stats.update();
 	}
 
-	function render() {
-		controls.update();
-		uniforms.u_time.value = clock.getElapsedTime() * controlParameters.Speed;
-		uniforms.u_frame.value += 1.0;
-		renderer.render(scene, camera);
-	}
-
-	function onWindowResize(event) {
+	function onWindowResize() {
 		renderer.setSize(window.innerWidth, window.innerHeight);
 		camera.aspect = window.innerWidth / window.innerHeight;
 		camera.updateProjectionMatrix();
-		uniforms.u_resolution.value.set(window.innerWidth, window.innerHeight).multiplyScalar(window.devicePixelRatio);
+		uniforms.u_resolution.value.set(window.innerWidth * window.devicePixelRatio, window.innerHeight * window.devicePixelRatio);
 	}
 
 	function onMouseMove(event) {
-		uniforms.u_mouse.value.set(event.pageX, window.innerHeight - event.pageY).multiplyScalar(window.devicePixelRatio);
+		uniforms.u_mouse.value.set(event.clientX * window.devicePixelRatio, (window.innerHeight - event.clientY) * window.devicePixelRatio);
 	}
-
-	function onTouchMove(event) {
-		uniforms.u_mouse.value.set(event.touches[0].pageX, window.innerHeight - event.touches[0].pageY).multiplyScalar(window.devicePixelRatio);
-	}
-}
+});

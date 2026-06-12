@@ -32,33 +32,6 @@
 			z-index: 100;
 		}
 
-		#sketch-stats {
-			position: absolute;
-			top: 20px;
-			right: 20px;
-			z-index: 100;
-		}
-
-		.dg.ac {
-			z-index: 100 !important;
-		}
-
-		.dg {
-			font-size: 12px;
-		}
-
-		.dg.main {
-			background-color: rgba(0, 0, 0, 0.8);
-		}
-
-		.dg .cr.boolean {
-			border-left: 3px solid #2FA1D6;
-		}
-
-		.dg .cr.function {
-			border-left: 3px solid #BD26D9;
-		}
-
 		canvas {
 			display: block;
 		}
@@ -67,18 +40,9 @@
 <body>
 	<div id="sketch-container"></div>
 	<div id="sketch-gui"></div>
-	<div id="sketch-stats"></div>
 
-	<!-- Three.js library -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-	<!-- Stats.js for performance monitoring -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
-
-	<!-- dat.GUI for controls -->
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
-
-	<!-- Main sketch script (includes embedded OrbitControls) -->
+	<!-- Everything is self-contained in this single file -->
+	<script src="lib/three.min.js"></script>
 	<script src="main.js"></script>
 </body>
 </html>
