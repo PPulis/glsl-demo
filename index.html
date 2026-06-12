@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>GLSL Shader Demo</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		html, body {
+			width: 100%;
+			height: 100%;
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			overflow: hidden;
+			background: #000;
+		}
+
+		#sketch-container {
+			width: 100%;
+			height: 100%;
+			display: block;
+		}
+
+		#sketch-gui {
+			position: absolute;
+			top: 20px;
+			left: 20px;
+			z-index: 100;
+		}
+
+		#sketch-stats {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			z-index: 100;
+		}
+
+		.dg.ac {
+			z-index: 100 !important;
+		}
+
+		.dg {
+			font-size: 12px;
+		}
+
+		.dg.main {
+			background-color: rgba(0, 0, 0, 0.8);
+		}
+
+		.dg .cr.boolean {
+			border-left: 3px solid #2FA1D6;
+		}
+
+		.dg .cr.function {
+			border-left: 3px solid #BD26D9;
+		}
+
+		canvas {
+			display: block;
+		}
+	</style>
+</head>
+<body>
+	<div id="sketch-container"></div>
+	<div id="sketch-gui"></div>
+	<div id="sketch-stats"></div>
+
+	<!-- Three.js library -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+	<!-- OrbitControls -->
+	<script src="https://cdn.jsdelivr.net/npm/three@r128/examples/js/controls/OrbitControls.js"></script>
+
+	<!-- Stats.js for performance monitoring -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+
+	<!-- dat.GUI for controls -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.9/dat.gui.min.js"></script>
+
+	<!-- Main sketch script -->
+	<script src="main.js"></script>
+</body>
+</html>
