@@ -50,7 +50,7 @@ function runSketch() {
 		camera.position.z = 30;
 
 		// Initialize the camera controls
-		var controls = new THREE.OrbitControls(camera, renderer.domElement);
+		var controls = new window.THREE.OrbitControls(camera, renderer.domElement);
 		controls.enablePan = false;
 		controls.autoRotate = true;
 		controls.autoRotateSpeed = 2;
