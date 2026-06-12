@@ -1,9 +1,54 @@
+// Simple OrbitControls implementation
+var OrbitControls = function(object, domElement) {
+	this.object = object;
+	this.domElement = domElement;
+	this.autoRotate = false;
+	this.autoRotateSpeed = 2;
+	this.enablePan = false;
+	
+	var euler = new THREE.Euler(0, 0, 0, 'YXZ');
+	var PI_2 = Math.PI / 2;
+	var v = new THREE.Vector3();
+	var spherical = new THREE.Spherical();
+	
+	var mouseDown = false;
+	var mouseX = 0;
+	var mouseY = 0;
+	
+	var self = this;
+	
+	this.update = function() {
+		if (this.autoRotate) {
+			this.object.rotation.y += (this.autoRotateSpeed * Math.PI / 180) / 60;
+		}
+	};
+	
+	this.domElement.addEventListener('mousedown', function() {
+		mouseDown = true;
+	}, false);
+	
+	this.domElement.addEventListener('mouseup', function() {
+		mouseDown = false;
+	}, false);
+	
+	this.domElement.addEventListener('mousemove', function(event) {
+		if (mouseDown) {
+			var deltaX = event.clientX - mouseX;
+			var deltaY = event.clientY - mouseY;
+			self.object.rotation.y += deltaX * 0.005;
+			self.object.rotation.x += deltaY * 0.005;
+		}
+		mouseX = event.clientX;
+		mouseY = event.clientY;
+	}, false);
+};
+
 window.onload = function() {
 	runSketch();
 };
 
 function runSketch() {
-	var renderer, scene, camera, clock, stats, controlParameters, uniforms, material, mesh;
+	var renderer, scene, camera, clock, stats, controlParameters, uniforms, material, mesh, controls;
 	var vertexShaderCode = "", fragmentShaderCode = "";
 
 	loadShaders();
@@ -49,15 +94,11 @@ function runSketch() {
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
 		camera.position.z = 30;
 
-		// Initialize the camera controls - check if OrbitControls is available
-		if (typeof OrbitControls !== 'undefined') {
-			var controls = new OrbitControls(camera, renderer.domElement);
-			controls.enablePan = false;
-			controls.autoRotate = true;
-			controls.autoRotateSpeed = 2;
-		} else {
-			console.warn('OrbitControls not loaded');
-		}
+		// Initialize the camera controls
+		controls = new OrbitControls(camera, renderer.domElement);
+		controls.enablePan = false;
+		controls.autoRotate = true;
+		controls.autoRotateSpeed = 2;
 
 		// Initialize the clock
 		clock = new THREE.Clock(true);
@@ -201,6 +242,7 @@ function runSketch() {
 	 * Renders the sketch
 	 */
 	function render() {
+		controls.update();
 		uniforms.u_time.value = clock.getElapsedTime() * controlParameters.Speed;
 		uniforms.u_frame.value += 1.0;
 		renderer.render(scene, camera);
