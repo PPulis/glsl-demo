@@ -49,11 +49,15 @@ function runSketch() {
 		camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 5000);
 		camera.position.z = 30;
 
-		// Initialize the camera controls
-		var controls = new window.THREE.OrbitControls(camera, renderer.domElement);
-		controls.enablePan = false;
-		controls.autoRotate = true;
-		controls.autoRotateSpeed = 2;
+		// Initialize the camera controls - check if OrbitControls is available
+		if (typeof OrbitControls !== 'undefined') {
+			var controls = new OrbitControls(camera, renderer.domElement);
+			controls.enablePan = false;
+			controls.autoRotate = true;
+			controls.autoRotateSpeed = 2;
+		} else {
+			console.warn('OrbitControls not loaded');
+		}
 
 		// Initialize the clock
 		clock = new THREE.Clock(true);
